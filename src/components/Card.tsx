@@ -1,21 +1,47 @@
+"use client";
+
+import { CardProps } from "@/context/interface";
+import { checkEmail, deleteUser, updateUser } from "@/utils/handleRequests";
 import { FloppyDisk, NotePencil, Trash, X } from "@phosphor-icons/react";
 import { useState } from "react";
 
-type CardType = {
-  nome: string;
-  email: string;
-};
-
-export default function Card({ nome, email }: CardType) {
+export default function Card({
+  id,
+  name,
+  email,
+  onUpdate,
+  onDelete,
+}: CardProps) {
   const [edit, setEdit] = useState(false);
   const [formData, setFormData] = useState({
-    nome: "",
-    email: "",
+    name: name,
+    email: email,
   });
 
-  const handleSubmit = () => {};
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email) {
+      console.log("Preencha todos os campos!");
+      return;
+    } else if (formData.email != email) {
+      const isEmailValid: boolean = await checkEmail(formData.email);
+      if (isEmailValid) {
+        console.log("Email já cadastrado");
+        return;
+      }
+    }
+    const newContact = await updateUser(id, formData);
+    setEdit(false);
+    onUpdate(newContact);
+    return;
+  };
+
+  const handleDelete = async () => {
+    await deleteUser(id);
+    onDelete(id);
   };
 
   return (
@@ -25,15 +51,16 @@ export default function Card({ nome, email }: CardType) {
         <>
           <form
             onSubmit={handleSubmit}
+            noValidate
             className="flex items-center justify-between w-full h-full gap-2"
           >
             <input
               type="text"
-              id="nome"
-              name="nome"
-              value={formData.nome}
+              id="name"
+              name="name"
+              value={formData.name}
               onChange={handleChange}
-              placeholder={formData.nome}
+              placeholder={formData.name}
               className="flex-1 px-3 py-2 border rounded-lg"
               required
             />
@@ -51,7 +78,7 @@ export default function Card({ nome, email }: CardType) {
               <button type="submit">
                 <FloppyDisk className="hover:cursor-pointer" size={25} />
               </button>
-              <button onClick={() => setEdit(false)}>
+              <button type="button" onClick={() => setEdit(false)}>
                 <X className="hover:cursor-pointer" size={25} />
               </button>
             </div>
@@ -59,16 +86,16 @@ export default function Card({ nome, email }: CardType) {
         </>
       ) : (
         <div className="flex items-center gap-2 justify-between w-full h-full text-center">
-          <p className="flex-1 px-3 ">{nome}</p>
+          <p className="flex-1 px-3 ">{name}</p>
           <p className="flex-1 px-3 ">{email}</p>
           <div className="flex items-center justify-center flex-1 gap-2">
-            <button onClick={() => setEdit(true)}>
+            <button type="button" onClick={() => setEdit(true)}>
               <NotePencil
                 className="hover:cursor-pointer hover:text-blue-400"
                 size={25}
               />
             </button>
-            <button>
+            <button type="button" onClick={handleDelete}>
               <Trash
                 size={25}
                 className="hover:cursor-pointer hover:text-red-500"
